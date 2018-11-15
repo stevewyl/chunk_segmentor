@@ -1,8 +1,9 @@
 """一些nlp的常用函数"""
 
+import re
 import itertools
 import collections
-import re
+from hanziconv import HanziConv
 
 
 # 扁平化列表
@@ -161,6 +162,21 @@ def hanlp_cut(sent_list, segmentor, qualifier_word=None, mode='accurate'):
     return res
 
 
+EMOJI_UNICODE = r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\u2600-\u26FF\u2700-\u27BF]'
+REGEX_STR = [
+    r'转发微博|欢迎转发|^回复|…{2,}|图片评论',  # 微博特定停用词
+    r'<[^>]+>',  # HTML标记
+    r'/{0,2}@\w+-?\w*[:：]?',  # @-用户
+    r'#.+#',  # hash-tags
+    # URLs
+    r'(?:https?://|www\.)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+    r'\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-] +\.[a-zA-Z0-9-.] +\b'  # E-MAIL
+]
+START_PATTERN = r'(\d+、|\d+\.(?!\d+)|\d+\)|(?<![a-z0-9])[a-z]{1}(?=[、\.\)])|\(\d+\)|[一二三四五六七八九十]+[、\)\.)])'
+END_PATTERN = r'(。|！|？|!|\?|；|;)'
+HTML = re.compile(r'('+'|'.join(REGEX_STR)+')', re.UNICODE)
+
+
 # 异常字符过滤
 def preprocess(string):
     invalid_unicode = u'[\u25A0-\u25FF\u0080-\u00A0\uE000-\uFBFF\u2000-\u2027\u2030-\u206F\u3000]+'
@@ -169,21 +185,21 @@ def preprocess(string):
     string = re.sub(r'\r|\t|<\w+>|&\w+;?|br\s*|li>', '', string)
     string = re.sub(invalid_char, '', string)
     string = re.sub(r'<U\+2028>|<U\+F09F>|<U\+F06C>|<U\+F0A7>', '', string)
-    string = re.sub(r'\s{2,}', ' ', string)
     string = re.sub(r' +', '<s>', string)
     string = re.sub(invalid_unicode, '<ss>', string)
     string = re.sub(lang_char, '<lan>', string)
+    string = re.sub(EMOJI_UNICODE, '', string)
+    string = re.sub(HTML, '', string)
     # string = re.sub(r'(工作描述|工作职责|岗位职责|任职要求)(:|：)', '', string)
     string = re.sub(r'[^\u4e00-\u9fa5\u0020-\u007f，。！？；、（）：\n\u2029\u2028a-zA-Z0-9]+', '', string)
-    return strQ2B(string)
+    return HanziConv.toSimplified(strQ2B(string))
 
 
 # 分句策略(比直接切开慢3倍)
 def sent_split(string):
-    start_pattern = r'(\d+、|\d+\.(?!\d+)|\d+\)|[a-z]{1}、|[a-z]{1}\.|[a-z]{1}\)|\(\d+\)|[一二三四五六七八九十]+[、\)\.)])'
-    end_pattern = r'(。|！|？|!|\?|；|;)'
-    new_string = re.sub(end_pattern, '\\1<cut>', re.sub(start_pattern, '<cut>\\1', string))
-    return [item for item in re.split(r'\n|\u2029|\u2028|<cut>', new_string) if item != '']
+    string = re.sub(END_PATTERN, '\\1<cut>', re.sub(
+        START_PATTERN, '<cut>\\1', string))
+    return [item for item in re.split(r'\n|\u2029|\u2028|<cut>', string) if item != '']
 
 
 def strQ2B(ustring):

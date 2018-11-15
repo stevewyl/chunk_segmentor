@@ -18,13 +18,18 @@ tf_config.gpu_options.allow_growth = True
 set_session(tf.Session(config=tf_config))
 gc.disable()
 
-# TODO
-# 1. 判断模型和trie树是否已经加载
-# 2. 
+global model_loaded
+global last_model_name
+global Tree
+global Labeler
+last_model_name = ''
+tree_loaded = False
+Labeler = None
+Tree = None
 
 
 class Chunk_Labeler(object):
-    def __init__(self, model_name='char-rnn', tagger=None):
+    def __init__(self, model_name='word-rnn', tagger=None):
         self.model_name = model_name
         self.tagger = tagger
 
@@ -37,7 +42,7 @@ class Chunk_Labeler(object):
                 char_input = True
             self.tagger = Tagger(self.model, self.p, char_input,
                                  mode, batch_size, radical_file)
-        print(self.tagger.get_tagger_info)
+        # print(self.tagger.get_tagger_info)
         return self.tagger.analyze(text)
 
     @classmethod
@@ -55,10 +60,11 @@ class Chunk_Labeler(object):
 
 
 class Chunk_Segmentor(object):
-    def __init__(self, model_name='', mode='accurate'):
+    def __init__(self, model_name='word-rnn', mode='accurate', verbose=0):
         self.pos = True
         self.mode = mode
         self.qualifier = True
+        self.verbose = verbose
         self.path = os.path.abspath(os.path.dirname(__file__))
         if model_name != '':
             self.model_name = model_name
@@ -85,9 +91,6 @@ class Chunk_Segmentor(object):
         self.weight_file = os.path.join(self.path, 'data/model/%s_weights.h5' % self.model_name)
         self.param_file = os.path.join(self.path, 'data/model/%s_parms.h5' % self.model_name)
         self.preprocess_file = os.path.join(self.path, 'data/model/%s_preprocess.h5' % self.model_name)
-
-        self.model_loaded = False
-        self.tree_loaded = False
         self.define_tagger()
 
     def define_tagger(self):
@@ -105,19 +108,32 @@ class Chunk_Segmentor(object):
 
         # acc模式变量
         if self.mode == 'accurate':
-            print('Model and Trie Tree are loading. It will cost 10-20s.')
-            if not self.model_loaded:
+            global tree_loaded
+            global last_model_name
+            global Labeler
+            global Tree
+            if self.verbose:
+                print('Model and Trie Tree are loading. It will cost 10-20s.')
+            if self.model_name != last_model_name:
                 self.labeler = Chunk_Labeler.load(
                     self.model_name, self.weight_file, self.param_file, self.preprocess_file)
-                print('load model succeed')
-                self.model_loaded = True
-            if not self.tree_loaded:
+                if self.verbose:
+                    print('load model succeed')
+                last_model_name = self.model_name
+                Labeler = self.labeler
+            else:
+                self.labeler = Labeler
+            if not tree_loaded:
                 chunk_dict = read_line(os.path.join(self.path, 'data/dict/chunk.txt'))
                 self.tree = Trie()
                 for chunk in chunk_dict:
                     self.tree.insert(chunk)
-                print('trie tree succeed')
-                self.tree_loaded = True
+                if self.verbose:
+                    print('trie tree succeed')
+                tree_loaded = True
+                Tree = self.tree
+            else:
+                self.tree = Tree
             radical_file = os.path.join(self.path, 'data/dict/radical.txt')
             self.tagger = Tagger(self.labeler.model, self.labeler.p,
                                  char_input=char_input, radical_file=radical_file,
@@ -185,7 +201,8 @@ class Chunk_Segmentor(object):
         assert isinstance(data, list)
         data_cnt = len(data)
         num_batches = int(data_cnt / batch_size) + 1
-        print('total_batch_num: ', num_batches)
+        if self.verbose:
+            print('total_batch_num: ', num_batches)
         for batch_num in range(num_batches):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_cnt)
