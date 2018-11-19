@@ -477,37 +477,3 @@ class Position_Embedding(Layer):
             return input_shape
         elif self.mode == 'concat':
             return (input_shape[0], input_shape[1], input_shape[2]+self.size)
-
-
-class Attention_Concat(Layer):
-    def __init__(self, weight_w12, weight_w3, **kwargs):
-        self.weight_w12 = weight_w12
-        self.weight_w3 = weight_w3
-        super(Attention_Concat, self).__init__(**kwargs)
-
-    def build(self, input_shape):
-        self.w1 = self.add_weight(name="W_{:s}".format(self.name),
-                                  shape=(input_shape[0][-1], self.weight_w12),
-                                  initializer="glorot_normal",
-                                  trainable=True)
-        self.w2 = self.add_weight(name="W_{:s}".format(self.name),
-                                  shape=(input_shape[1][-1], self.weight_w12),
-                                  initializer="glorot_normal",
-                                  trainable=True)
-        self.w3 = self.add_weight(name="W_{:s}".format(self.name),
-                                  shape=(self.weight_w12, self.weight_w3),
-                                  initializer="glorot_normal",
-                                  trainable=True)
-        super(Attention_Concat, self).build(input_shape)
-
-    def call(self, x):
-        tmp = K.tanh(K.dot(x[0], self.w1) + K.dot(x[1], self.w2))
-        z = K.sigmoid(K.dot(tmp, self.w3))
-        x_new = z * x[0] + (1 - z) * x[1]
-        return x_new
-
-    def compute_mask(self, input, input_mask=None):
-        return None
-
-    def compute_output_shape(self, input_shape):
-        return (input_shape[0][0], input_shape[0][1], input_shape[0][2])

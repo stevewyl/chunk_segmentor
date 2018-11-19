@@ -140,8 +140,10 @@ def output_reform(a, b, mode):
 
 
 def reshape_term(term, qualifier_word=None, mode='accurate'):
-    pos = str(term.nature)
-    word = term.word
+    # pos = str(term.nature)
+    # word = term.word
+    pos = term[1]
+    word = term[0]
     if pos == 'np':
         if word in qualifier_word:
             return output_reform(qualifier_word[word], pos, mode)
@@ -157,6 +159,17 @@ def hanlp_cut(sent_list, segmentor, qualifier_word=None, mode='accurate'):
             res = [[term.word + '_' + str(term.nature) for term in segmentor.segment(sub)] for sub in sent_list]
         else:
             res = [[(term.word, str(term.nature)) for term in segmentor.segment(sub)] for sub in sent_list]
+    else:
+        res = [[reshape_term(term, qualifier_word, mode) for term in segmentor.segment(sub)] for sub in sent_list]
+    return res
+
+
+def jieba_cut(sent_list, segmentor, qualifier_word=None, mode='accurate'):
+    if qualifier_word is None:
+        if mode == 'accurate':
+            res = [[word + '_' + flag for word, flag in segmentor.cut(sub)] for sub in sent_list]
+        else:
+            res = [[(word, flag) for word, flag in segmentor.cut(sub)] for sub in sent_list]
     else:
         res = [[reshape_term(term, qualifier_word, mode) for term in segmentor.segment(sub)] for sub in sent_list]
     return res

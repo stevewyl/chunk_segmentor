@@ -5,8 +5,10 @@ import pickle
 from pathlib import Path
 from collections import Counter
 from chunk_segmentor.trie import Trie
-from chunk_segmentor.utils import read_line, flatten_gen, sent_split, preprocess, hanlp_cut
-from chunk_segmentor.segmentor import SafeJClass
+from chunk_segmentor.utils import read_line, flatten_gen, sent_split, preprocess, jieba_cut  # hanlp_cut,
+# from chunk_segmentor.segmentor import SafeJClass
+import jieba
+import jieba.posseg as pseg
 from chunk_segmentor.preprocessing import IndexTransformer
 from chunk_segmentor.model import WORD_RNN, CHAR_RNN
 from chunk_segmentor.tagger import Tagger
@@ -75,6 +77,7 @@ class Chunk_Segmentor(object):
                 self.model_name = model_name
 
         # hanlp变量
+        '''
         self.hanlp_static = Path(self.path) / 'segmentor' / 'static'
         self.hanlp_config = self.hanlp_static / 'hanlp.properties'
         self.hanlp_dictionary = self.hanlp_static / 'data' / 'dictionary' / 'custom'
@@ -86,6 +89,11 @@ class Chunk_Segmentor(object):
             dict_path = self.hanlp_static / 'data_nochunk' / 'CustomDictionary.txt'
             custom_dict.loadDat(str(dict_path))
         self.seg = SafeJClass('com.hankcs.hanlp.HanLP')
+        '''
+
+        # jieba初始化
+        jieba.load_userdict('segmentor/chunk.txt')
+        self.seg = pseg
 
         # model变量
         self.weight_file = os.path.join(self.path, 'data/model/%s_weights.h5' % self.model_name)
@@ -168,13 +176,18 @@ class Chunk_Segmentor(object):
             *[[idx, sub] for idx, item in enumerate(data) for sub in sent_split(preprocess(item))])
         cc = list(Counter(idx_list).values())
         end_idx = [sum(cc[:i]) for i in range(len(cc)+1)]
-
+        '''
         if self.fast_qualifier:
             seg_res = hanlp_cut(strings, self.seg,
                                 self.qualifier_word, mode=self.mode)
         else:
             seg_res = hanlp_cut(strings, self.seg, mode=self.mode)
-
+        '''
+        if self.fast_qualifier:
+            seg_res = jieba_cut(strings, self.seg,
+                                self.qualifier_word, mode=self.mode)
+        else:
+            seg_res = jieba_cut(strings, self.seg, mode=self.mode)
         if self.mode == 'accurate':
             outputs, _ = self.tagger.analyze(seg_res)
         else:
@@ -194,10 +207,9 @@ class Chunk_Segmentor(object):
             self.pos = True
         if not qualifier:
             self.qualifier = False
-            self.define_tagger()
         else:
             self.qualifier = True
-            self.define_tagger()
+        self.define_tagger()
         assert isinstance(data, list)
         data_cnt = len(data)
         num_batches = int(data_cnt / batch_size) + 1

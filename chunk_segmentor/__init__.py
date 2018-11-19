@@ -7,14 +7,14 @@ from datetime import datetime
 
 STATIC_ROOT = os.path.dirname(os.path.realpath(__file__))
 DATA_PATH = Path(STATIC_ROOT) / 'data'
-HANLP_DATA_PATH = Path(STATIC_ROOT) / 'segmentor' / 'static'
+# HANLP_DATA_PATH = Path(STATIC_ROOT) / 'segmentor' / 'static'
 MD5_FILE_PATH = DATA_PATH / 'model_data.md5'
 UPDATE_TAG_PATH = DATA_PATH / 'last_update.pkl'
 MD5_HDFS_PATH = '/user/kdd_wangyilei/chunk_segmentor/model_data.md5'
 MODEL_HDFS_PATH = '/user/kdd_wangyilei/chunk_segmentor/model_data.zip'
-HANLP_DATA_PATH_1 = HANLP_DATA_PATH / 'data_nochunk'
-HANLP_DATA_PATH_2 = HANLP_DATA_PATH / 'data_withchunk'
-HANLP_DATA_PATH_o = HANLP_DATA_PATH / 'data' / 'dictionary' / 'custom' / 'CustomDictionary.txt.bin'
+# HANLP_DATA_PATH_1 = HANLP_DATA_PATH / 'data_nochunk'
+# HANLP_DATA_PATH_2 = HANLP_DATA_PATH / 'data_withchunk'
+# HANLP_DATA_PATH_o = HANLP_DATA_PATH / 'data' / 'dictionary' / 'custom' / 'CustomDictionary.txt.bin'
 USER_NAME = 'yilei.wang'
 PASSWORD = 'ifchange0829FWGR'
 FTP_PATH_1 = 'ftp://192.168.8.23:21/chunk_segmentor'
@@ -33,8 +33,8 @@ def check_version():
                 if src:
                     flag = update(src)
                     if flag:
-                        config_path = str(HANLP_DATA_PATH / 'hanlp.properties')
-                        write_config(config_path, str(HANLP_DATA_PATH))
+                        # config_path = str(HANLP_DATA_PATH / 'hanlp.properties')
+                        # write_config(config_path, str(HANLP_DATA_PATH))
                         pickle.dump(current_time, open(UPDATE_TAG_PATH, 'wb'))
                     else:
                         print('更新失败！')
@@ -49,8 +49,8 @@ def check_version():
         print("这是第一次启动Chunk分词器。 请耐心等待片刻至数据和模型下载完成。")
         flag = download()
         if flag:
-            config_path = str(HANLP_DATA_PATH / 'hanlp.properties')
-            write_config(config_path, str(HANLP_DATA_PATH))
+            # config_path = str(HANLP_DATA_PATH / 'hanlp.properties')
+            # write_config(config_path, str(HANLP_DATA_PATH))
             current_time = datetime.now()
             pickle.dump(current_time, open(UPDATE_TAG_PATH, 'wb'))
         else:
@@ -100,13 +100,13 @@ def download():
     if ret1 == 0 and ret2 == 0:
         os.system('unzip -q model_data.zip')
         os.system('cp -r model_data/data %s' % STATIC_ROOT)
-        os.system('cp -r model_data/hanlp_data/data %s' % HANLP_DATA_PATH)
+        # os.system('cp -r model_data/hanlp_data/data %s' % HANLP_DATA_PATH)
         os.system('cp -f model_data/best_model.txt %s' % DATA_PATH)
         os.system('cp -f model_data.md5 %s' % DATA_PATH)
-        os.system('mkdir %s' % HANLP_DATA_PATH_1)
-        os.system('mkdir %s' % HANLP_DATA_PATH_2)
-        os.system('cp -f %s %s' % (HANLP_DATA_PATH_o, HANLP_DATA_PATH_1))
-        os.system('cp -f model_data/hanlp_data/CustomDictionary.txt.bin %s' % HANLP_DATA_PATH_2)
+        # os.system('mkdir %s' % HANLP_DATA_PATH_1)
+        # os.system('mkdir %s' % HANLP_DATA_PATH_2)
+        # os.system('cp -f %s %s' % (HANLP_DATA_PATH_o, HANLP_DATA_PATH_1))
+        # os.system('cp -f model_data/hanlp_data/CustomDictionary.txt.bin %s' % HANLP_DATA_PATH_2)
         os.system('rm -r model_data')
         os.system('rm model_data.md5*')
         os.system('rm model_data.zip*')
@@ -176,13 +176,13 @@ def update_data(src):
 
         os.system('unzip -q model_data.zip')
         os.system('rm -r %s' % DATA_PATH)
-        os.system('rm -r %s' % str(HANLP_DATA_PATH / 'data'))
+        # os.system('rm -r %s' % str(HANLP_DATA_PATH / 'data'))
         os.system('cp -r model_data/data %s' % STATIC_ROOT)
-        os.system('cp -r model_data/hanlp_data/data %s' % HANLP_DATA_PATH)
+        # os.system('cp -r model_data/hanlp_data/data %s' % HANLP_DATA_PATH)
         os.system('cp -f model_data/best_model.txt %s' % DATA_PATH)
         os.system('cp -f model_data.md5 %s' % DATA_PATH)
-        os.system('cp -f %s %s' % (HANLP_DATA_PATH_o, HANLP_DATA_PATH_1))
-        os.system('cp -f model_data/hanlp_data/CustomDictionary.txt.bin %s' % HANLP_DATA_PATH_2)
+        # os.system('cp -f %s %s' % (HANLP_DATA_PATH_o, HANLP_DATA_PATH_1))
+        # os.system('cp -f model_data/hanlp_data/CustomDictionary.txt.bin %s' % HANLP_DATA_PATH_2)
         os.system('rm -r model_data')
         os.system('rm model_data.md5*')
         os.system('rm model_data.zip*')
