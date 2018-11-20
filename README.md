@@ -1,3 +1,5 @@
+update 2018.11.20 暂停更新，已迁移至 https://github.com/stevewyl/nlp_toolkit 作为内置模块使用
+--------------------------
 # Chunk分词器使用指南
 
 环境依赖：python 3.6 (暂时只支持python3)
